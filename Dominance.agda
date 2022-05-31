@@ -164,7 +164,7 @@ module Repleteness (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
   isPropIsReplete : {ℓ ℓ' : _} (A : Type ℓ') → isProp (IsReplete ℓ A)
   isPropIsReplete A = isPropΠ4 λ _ _ _ _ → isPropIsEquiv _
 
-  image : {ℓ ℓ' : _} (A : Type ℓ) (B : Type ℓ') (f : A → B) → Type {!!}
+  image : {ℓ ℓ' : _} (A : Type ℓ) (B : Type ℓ') (f : A → B) → Type (ℓ-max ℓ ℓ')
   image A B f = Σ[ b ∈ B ] ∥ fiber f b ∥
 
   -- This is claimed by Hyland, but not proved.
