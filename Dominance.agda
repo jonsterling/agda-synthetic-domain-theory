@@ -1,3 +1,5 @@
+{-# OPTIONS --guardedness #-}
+
 module Dominance where
 
 open import Resizing
@@ -6,6 +8,7 @@ open import Cubical.Foundations.HLevels
 open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Univalence
 open import Cubical.Reflection.RecordEquiv
+open import Cubical.Data.Sigma
 
 module _ {ℓ} (𝒮 : Ω → Type ℓ) where
   HasTrue = 𝒮 ⊤
@@ -85,17 +88,78 @@ module Dominance (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
   snd (𝕊/Σ ϕ ψ) = IsDominion.hasSigma h𝒮 Ω/[ ϕ ] (λ x → Ω/[ ψ x ]) [ ϕ ]∈𝒮 λ x → [ ψ x ]∈𝒮
 
   record L {ℓ : _} (A : Type ℓ) : Type ℓ where
+    constructor partial
     field
       supp : 𝕊
       val : [ supp ] → A
 
   open L public
 
-  η : {ℓ : _} {A : Type ℓ} → A → L A
-  supp (η x) = 𝕊/⊤
-  val (η x) _ = x
+  module 𝕃 where
+    η : {ℓ : _} {A : Type ℓ} → A → L A
+    supp (η x) = 𝕊/⊤
+    val (η x) _ = x
+
+    module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
+      bind : (u : L A) (f : A → L B) → L B
+      supp (bind u f) = 𝕊/Σ (supp u) λ x → supp (f (val u x))
+      val (bind u f) (p , q) = val (f (val u p)) q
+
+      map : (f : A → B) (u : L A) → L B
+      supp (map f u) = supp u
+      val (map f u) u↓ = f (val u u↓)
+
+
+module SDT (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
+  open Dominance 𝒮 h𝒮
+
+  𝕊/⊥ : 𝕊
+  fst 𝕊/⊥ = ⊥
+  snd 𝕊/⊥ = hasFalse
+
+  -- the initial L-algebra
+  data 𝕀 : Type where
+    alg : L 𝕀 → 𝕀
+
+  -- the final L-coalgebra
+  record 𝔽 : Type where
+    coinductive
+    field
+      coalg : L 𝔽
+
+  z : 𝕀
+  z = alg (partial 𝕊/⊥ ⊥-elim)
+
+  -- is this the correct definition of the successor?
+  s : 𝕀 → 𝕀
+  s x = alg (𝕃.η x)
+
+  ε : 𝕀 → 𝔽
+  supp (𝔽.coalg (ε (alg x))) = supp x
+  val (𝔽.coalg (ε (alg x))) x↓ = ε (val x x↓)
+
+  ∞ : 𝔽
+  supp (𝔽.coalg ∞) = 𝕊/⊤
+  val (𝔽.coalg ∞) _ = ∞
+
+  module _ {ℓJ ℓI ℓE ℓB : _} {J : Type ℓJ} {I : Type ℓI} {B : Type ℓB} (p : J → I) (E : B → Type ℓE) where
+    IsOrthogonal : Type _
+    IsOrthogonal =
+      (b : I → B) (e : (j : J) → E (b (p j)))
+      → ∃![ e' ∈ ((i : I) → E (b i)) ] ((j : J) → e j ≡ e' (p j))
 
   module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
-    bind : (u : L A) (f : A → L B) → L B
-    supp (bind u f) = 𝕊/Σ (supp u) λ x → supp (f (val u x))
-    val (bind u f) (p , q) = val (f (val u p)) q
+    IsEquable : (f : A → B) → Type _
+    IsEquable f = isEquiv {A = B → 𝕊} {B = A → 𝕊} λ ϕ x → ϕ (f x)
+
+    isPropIsEquable : (f : A → B) → isProp (IsEquable f)
+    isPropIsEquable f = isPropIsEquiv _
+
+  IsReplete : (ℓ : _) {ℓ' : _} (A : Type ℓ') → Type (ℓ-max (ℓ-suc ℓ) ℓ')
+  IsReplete ℓ A =
+    (I J : Type ℓ) (i : J → I)
+    → IsEquable i
+    → isEquiv {A = I → A} {B = J → A} (λ a j → a (i j))
+
+  isPropIsReplete : {ℓ ℓ' : _} (A : Type ℓ') → isProp (IsReplete ℓ A)
+  isPropIsReplete A = isPropΠ4 λ _ _ _ _ → isPropIsEquiv _

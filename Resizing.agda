@@ -52,6 +52,8 @@ resize-Ω : {ℓ : _} (P : Type ℓ) → isProp P → Ω
 Ω.prf ⊥ = Empty.⊥
 Ω.prop ⊥ = Empty.isProp⊥
 
+⊥-elim = Empty.elim
+
 _⊓_ : Ω → Ω → Ω
 Ω.prf (P ⊓ Q) = Ω.prf P × Ω.prf Q
 Ω.prop (P ⊓ Q) = isProp× (Ω.prop P) (Ω.prop Q)
