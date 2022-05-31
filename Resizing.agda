@@ -14,9 +14,14 @@ record Ω : Type where
     prf : Type
     prop : isProp prf
 
+
 -- TODO: figure out how best to use the SIP machinery for this?
-postulate
-  Ω/ext : {P Q : Ω} → Ω.prf P ≡ Ω.prf Q → P ≡ Q
+Ω/ext : {P Q : Ω} → Ω.prf P ≡ Ω.prf Q → P ≡ Q
+Ω.prf (Ω/ext {P} {Q} PQ i) = PQ i
+Ω.prop (Ω/ext {P} {Q} PQ i) = aux i
+  where
+    aux : PathP (λ i → isProp (PQ i)) (Ω.prop P) (Ω.prop Q)
+    aux = toPathP (isPropIsProp (Ω.prop _) (Ω.prop Q))
 
 
 {-# NO_UNIVERSE_CHECK #-}
