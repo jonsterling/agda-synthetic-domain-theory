@@ -9,6 +9,8 @@ open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Univalence
 open import Cubical.Reflection.RecordEquiv
 open import Cubical.Data.Sigma
+open import Cubical.HITs.PropositionalTruncation using (∥_∥)
+
 
 module _ {ℓ} (𝒮 : Ω → Type ℓ) where
   HasTrue = 𝒮 ⊤
@@ -142,6 +144,7 @@ module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 �
   supp (𝔽.coalg ∞) = 𝕊/⊤
   val (𝔽.coalg ∞) _ = ∞
 
+-- Repleteness is probably not the best notion for HIGHER domain theory, since the repletion of any type is going to be an h-set.
 module Repleteness (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
   open Dominance 𝒮 h𝒮
 
@@ -160,3 +163,14 @@ module Repleteness (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
 
   isPropIsReplete : {ℓ ℓ' : _} (A : Type ℓ') → isProp (IsReplete ℓ A)
   isPropIsReplete A = isPropΠ4 λ _ _ _ _ → isPropIsEquiv _
+
+  image : {ℓ ℓ' : _} (A : Type ℓ) (B : Type ℓ') (f : A → B) → Type {!!}
+  image A B f = Σ[ b ∈ B ] ∥ fiber f b ∥
+
+  -- This is claimed by Hyland, but not proved.
+  repletion : {ℓ : _} → Type ℓ → Type ℓ
+  repletion A = image A ((A → 𝕊) → 𝕊) λ a ϕ → ϕ a
+
+  isRepleteRepletion : {ℓ : _} (A : Type ℓ) → IsReplete ℓ (repletion A)
+  isRepleteRepletion = {!!}
+  -- TODO
