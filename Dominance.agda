@@ -142,12 +142,6 @@ module SDT (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) 
   supp (𝔽.coalg ∞) = 𝕊/⊤
   val (𝔽.coalg ∞) _ = ∞
 
-  module _ {ℓJ ℓI ℓE ℓB : _} {J : Type ℓJ} {I : Type ℓI} {B : Type ℓB} (p : J → I) (E : B → Type ℓE) where
-    IsOrthogonal : Type _
-    IsOrthogonal =
-      (b : I → B) (e : (j : J) → E (b (p j)))
-      → ∃![ e' ∈ ((i : I) → E (b i)) ] ((j : J) → e j ≡ e' (p j))
-
   module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
     IsEquable : (f : A → B) → Type _
     IsEquable f = isEquiv {A = B → 𝕊} {B = A → 𝕊} λ ϕ x → ϕ (f x)
