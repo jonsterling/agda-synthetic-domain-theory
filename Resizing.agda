@@ -14,7 +14,7 @@ record Ω : Type where
     prf : Type
     prop : isProp prf
 
--- TODO
+-- TODO: figure out how best to use the SIP machinery for this?
 postulate
   Ω/ext : {P Q : Ω} → Ω.prf P ≡ Ω.prf Q → P ≡ Q
 
