@@ -110,7 +110,7 @@ module Dominance (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
       val (map f u) u↓ = f (val u u↓)
 
 
-module SDT (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
+module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
   open Dominance 𝒮 h𝒮
 
   𝕊/⊥ : 𝕊
@@ -141,6 +141,9 @@ module SDT (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) 
   ∞ : 𝔽
   supp (𝔽.coalg ∞) = 𝕊/⊤
   val (𝔽.coalg ∞) _ = ∞
+
+module Repleteness (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
+  open Dominance 𝒮 h𝒮
 
   module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
     IsEquable : (f : A → B) → Type _
