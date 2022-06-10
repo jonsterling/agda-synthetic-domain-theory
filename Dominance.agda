@@ -6,156 +6,107 @@ open import Resizing
 open import Cubical.Foundations.Everything
 open import Cubical.Reflection.RecordEquiv
 open import Cubical.Data.Sigma
+open import Cubical.Data.Unit
 open import Cubical.HITs.PropositionalTruncation using (∥_∥)
 
-
-module _ {ℓ} (𝒮 : Ω → Type ℓ) where
-  HasTrue = 𝒮 ⊤
-  HasDepConj = (P Q : Ω) → 𝒮 P → (Ω.prf P → 𝒮 Q) → 𝒮 (P ⊓ Q)
-  HasSigma = (P : Ω) (Q : Ω.prf P → Ω) (hP : 𝒮 P) (hQ : (p : Ω.prf P) → 𝒮 (Q p)) → 𝒮 (Ω/Σ P Q)
-
-  abstract
-    HasDepConj→HasSigma : HasDepConj → HasSigma
-    HasDepConj→HasSigma h𝒮 P Q hP hQ =
-      subst 𝒮 lem' (h𝒮 P (⋀ (Ω.prf P) λ p → Q p) hP lem)
-
-      where
-      lem : Ω.prf P → 𝒮 (⋀ (Ω.prf P) (λ p → Q p))
-      lem p = subst 𝒮 (Ω/ext (hPropExt (Ω.prop (Q p)) (Ω.prop (⋀ (Ω.prf P) Q)) fwd bwd)) (hQ p)
-        where
-        fwd : Ω.prf (Q p) → Ω.prf (⋀ (Ω.prf P) Q)
-        fwd x = into λ p' → subst (λ z → Ω.prf (Q z)) (Ω.prop P p p') x
-
-        bwd : Ω.prf (⋀ (Ω.prf P) Q) → Ω.prf (Q p)
-        bwd (into x) = x p
-
-      lem' : (P ⊓ ⋀ (Ω.prf P) (λ p → Q p)) ≡ Ω/Σ P Q
-      lem' = Ω/ext (hPropExt (Ω.prop (P ⊓ ⋀ (Ω.prf P) Q)) (isPropΣ (Ω.prop P) λ p → Ω.prop (Q p)) fwd bwd)
-        where
-        fwd : Ω.prf (P ⊓ ⋀ (Ω.prf P) Q) → Σ (Ω.prf P) (λ z → Ω.prf (Q z))
-        fst (fwd (p , _)) = p
-        snd (fwd (p , into q)) = q p
-
-        bwd : Σ (Ω.prf P) (λ z → Ω.prf (Q z)) → Ω.prf (P ⊓ ⋀ (Ω.prf P) Q)
-        fst (bwd (p , q)) = p
-        snd (bwd (p , q)) = into λ p' → subst (λ z → Ω.prf (Q z)) (Ω.prop P p p') q
-
-  record IsDominion : Type (ℓ-suc ℓ) where
+module _ {ℓ} (isOpen : Type ℓ → Type ℓ) where
+  record isDominion : Type (ℓ-suc ℓ) where
     field
-      isPropValued : (P : Ω) → isProp (𝒮 P)
-      hasTrue : HasTrue
-      hasDepConj : HasDepConj
+      isPropIsOpen : (A : Type ℓ) → isProp (isOpen A)
+      isOpen→isProp : (A : Type ℓ) → isOpen A → isProp A
+      isOpenUnit : isOpen Unit*
+      isOpenSigma : (A : Type ℓ) (B : A → Type ℓ) → isOpen A → ((x : A) → isOpen (B x)) → isOpen (Σ A B)
 
-    hasSigma = HasDepConj→HasSigma hasDepConj
+  open isDominion public
 
-unquoteDecl IsDominionIsoΣ = declareRecordIsoΣ IsDominionIsoΣ (quote IsDominion)
+  unquoteDecl isDominionIsoΣ = declareRecordIsoΣ isDominionIsoΣ (quote isDominion)
 
-isPropIsDominion : {ℓ : _} (𝒮 : Ω → Type ℓ) → isProp (IsDominion 𝒮)
-isPropIsDominion 𝒮 =
-  isOfHLevelRetractFromIso 1 IsDominionIsoΣ
-    (isPropΣ (isPropΠ λ _ → isPropIsProp) λ prop-valued →
-     isPropΣ (prop-valued _) λ _ →
-     isPropΠ4 (λ _ _ _ _ → prop-valued _))
+record Dominion ℓ : Type (ℓ-suc ℓ) where
+  field
+    isOpen : Type ℓ → Type ℓ
+    isDominionIsOpen : isDominion isOpen
 
+open Dominion public
 
-module Dominance (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
-  𝕊 : Type
-  𝕊 = Σ[ α ∈ Ω ] 𝒮 α
+module 𝕃 {ℓ} (𝒮 : Dominion ℓ) where
 
-  [_] : 𝕊 → Type
-  [ ϕ ] = Ω.prf (fst ϕ)
-
-  isProp[_] : (ϕ : 𝕊) → isProp [ ϕ ]
-  isProp[ ϕ ] = Ω.prop (fst ϕ)
-
-  Ω/[_] : 𝕊 → Ω
-  Ω/[ ϕ ] = fst ϕ
-
-  [_]∈𝒮 : (ϕ : 𝕊) → 𝒮 Ω/[ ϕ ]
-  [ ϕ ]∈𝒮 = snd ϕ
-
-  𝕊/⊤ : 𝕊
-  fst 𝕊/⊤ = ⊤
-  snd 𝕊/⊤ = IsDominion.hasTrue h𝒮
-
-  𝕊/& : (ϕ : 𝕊) (ψ : Ω) → ([ ϕ ] → 𝒮 ψ) → 𝕊
-  fst (𝕊/& ϕ ψ hψ) = Ω/[ ϕ ] ⊓ ψ
-  snd (𝕊/& ϕ ψ hψ) = IsDominion.hasDepConj h𝒮 Ω/[ ϕ ] ψ [ ϕ ]∈𝒮 hψ
-
-  𝕊/Σ : (ϕ : 𝕊) (ψ : [ ϕ ] → 𝕊) → 𝕊
-  fst (𝕊/Σ ϕ ψ) = Ω/Σ Ω/[ ϕ ] λ x → Ω/[ ψ x ]
-  snd (𝕊/Σ ϕ ψ) = IsDominion.hasSigma h𝒮 Ω/[ ϕ ] (λ x → Ω/[ ψ x ]) [ ϕ ]∈𝒮 λ x → [ ψ x ]∈𝒮
-
-  record L {ℓ : _} (A : Type ℓ) : Type ℓ where
-    constructor partial
+  -- This is a resizing axiom
+  {-# NO_UNIVERSE_CHECK #-}
+  record L {ℓ'} (A : Type ℓ') : Type (ℓ-max ℓ ℓ') where
     field
-      supp : 𝕊
-      val : [ supp ] → A
+      supp : Type ℓ
+      suppIsOpen : 𝒮 .isOpen supp
+      val : supp → A
 
-  open L public
+  map : {ℓ' ℓ'' : _} {A : Type ℓ'} {B : Type ℓ''} (f : A → B) → L A → L B
+  L.supp (map f x) = L.supp x
+  L.suppIsOpen (map f x) = L.suppIsOpen x
+  L.val (map f x) x↓ = f (L.val x x↓)
 
-  module 𝕃 where
-    η : {ℓ : _} {A : Type ℓ} → A → L A
-    supp (η x) = 𝕊/⊤
-    val (η x) _ = x
+  record Alg ℓ' : Type (ℓ-suc (ℓ-max ℓ ℓ')) where
+    field
+      car : Type ℓ'
+      force : L car → car
 
-    module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
-      bind : (u : L A) (f : A → L B) → L B
-      supp (bind u f) = 𝕊/Σ (supp u) λ x → supp (f (val u x))
-      val (bind u f) (p , q) = val (f (val u p)) q
-
-      map : (f : A → B) (u : L A) → L B
-      supp (map f u) = supp u
-      val (map f u) u↓ = f (val u u↓)
-
-module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
-  open Dominance 𝒮 h𝒮
-
-  𝕊/⊥ : 𝕊
-  fst 𝕊/⊥ = ⊥
-  snd 𝕊/⊥ = hasFalse
+  record AlgHom {ℓ' ℓ''} (X : Alg ℓ') (Y : Alg ℓ'') : Type (ℓ-max ℓ (ℓ-max ℓ' ℓ'')) where
+    field
+      car : Alg.car X → Alg.car Y
+      force : (x : L (Alg.car X)) → car (Alg.force X x) ≡ Alg.force Y (map car x)
 
   -- the initial L-algebra
-  data 𝕀 : Type where
-    alg : L 𝕀 → 𝕀
+  data ω : Type ℓ where
+    alg : L ω → ω
 
-  invAlg : 𝕀 → L 𝕀
-  invAlg (alg x) = x
+  algInv : ω → L ω
+  algInv (alg x) = x
 
-  sectionAlg : section alg invAlg
-  sectionAlg (alg x) = refl
+  ωAlg : Alg _
+  Alg.car ωAlg = ω
+  Alg.force ωAlg = alg
 
-  retractAlg : (x : L 𝕀) → invAlg (alg x) ≡ x
-  retractAlg _ = refl
+  module _ {ℓ' : _} (X : Alg ℓ') where
+    mutual
+      ωAlgUnivMap : ω → Alg.car X
+      ωAlgUnivMap (alg x) = Alg.force X (ωAlgUnivMapAux x)
 
-  -- Lambek's lemma
-  algIsEquiv : isEquiv alg
-  algIsEquiv = isoToIsEquiv (iso alg invAlg sectionAlg retractAlg)
+      ωAlgUnivMapAux : L ω → L (Alg.car X)
+      L.supp (ωAlgUnivMapAux x) = L.supp x
+      L.suppIsOpen (ωAlgUnivMapAux x) = L.suppIsOpen x
+      L.val (ωAlgUnivMapAux x) x↓ = ωAlgUnivMap (L.val x x↓)
 
-    -- the final L-coalgebra
-  record 𝔽 : Type where
+    ωAlgUnivHom : AlgHom ωAlg X
+    AlgHom.car ωAlgUnivHom = ωAlgUnivMap
+    AlgHom.force ωAlgUnivHom x = refl
+
+
+  -- the final L-coalgebra
+  record ω* : Type ℓ where
+    constructor coalgInv
     coinductive
     field
-      coalg : L 𝔽
-  open 𝔽 public
+      coalg : L ω*
 
-  invCoalg : L 𝔽 → 𝔽
-  𝔽.coalg (invCoalg x) = x
+  ω*Alg : Alg ℓ
+  Alg.car ω*Alg = ω*
+  Alg.force ω*Alg = coalgInv
 
-  sectionCoalg : section coalg invCoalg
-  sectionCoalg _ = refl
+  coalgIso : Iso ω* (L ω*)
+  Iso.fun coalgIso = ω*.coalg
+  Iso.inv coalgIso = coalgInv
+  Iso.rightInv coalgIso _ = refl
+  ω*.coalg (Iso.leftInv coalgIso a _) = ω*.coalg a
 
-  retractCoalg : retract coalg invCoalg
-  coalg (retractCoalg x _) = coalg x
+  coalgIsEquiv : isEquiv ω*.coalg
+  coalgIsEquiv = isoToIsEquiv coalgIso
 
-  -- dual Lambek's lemma
-  coalgIsEquiv : isEquiv coalg
-  coalgIsEquiv = isoToIsEquiv (iso coalg invCoalg sectionCoalg retractCoalg)
+  algIso : Iso (L ω) ω
+  Iso.fun algIso = alg
+  Iso.inv algIso = algInv
+  Iso.rightInv algIso (alg _) = refl
+  Iso.leftInv algIso _ = refl
 
-  ε : 𝕀 → 𝔽
-  supp (𝔽.coalg (ε (alg x))) = supp x
-  val (𝔽.coalg (ε (alg x))) x↓ = ε (val x x↓)
+  algIsEquiv : isEquiv ω.alg
+  algIsEquiv = isoToIsEquiv algIso
 
-  ∞ : 𝔽
-  supp (𝔽.coalg ∞) = 𝕊/⊤
-  val (𝔽.coalg ∞) _ = ∞
+  ε : ω → ω*
+  ε = ωAlgUnivMap ω*Alg
