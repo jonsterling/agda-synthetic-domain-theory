@@ -108,13 +108,6 @@ module Dominance (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
       supp (map f u) = supp u
       val (map f u) u↓ = f (val u u↓)
 
-dropEndpoints : {A : Type} {a b : A} → Path A a b → I → A
-dropEndpoints p i = p i
-
-data S1 : Type where
-  base : S1
-  loop : base ≡ base
-
 module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
   open Dominance 𝒮 h𝒮
 
