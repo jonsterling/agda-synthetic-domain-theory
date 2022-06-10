@@ -2,7 +2,6 @@
 
 module Dominance where
 
-open import Resizing
 open import Cubical.Foundations.Everything
 open import Cubical.Reflection.RecordEquiv
 open import Cubical.Data.Sigma
@@ -20,6 +19,15 @@ module _ {ℓ} (isOpen : Type ℓ → Type ℓ) where
   open isDominion public
 
   unquoteDecl isDominionIsoΣ = declareRecordIsoΣ isDominionIsoΣ (quote isDominion)
+
+  abstract
+    isPropIsDominion : isProp isDominion
+    isPropIsDominion =
+      isOfHLevelRetractFromIso 1 isDominionIsoΣ
+      (isPropΣ (isPropΠ λ _ → isPropIsProp) λ h →
+       isPropΣ (isPropΠ2 (λ A A' → isPropIsProp)) λ _ →
+       isPropΣ (h _) λ _ →
+       isPropΠ4 λ _ _ _ _ → h (Σ _ _))
 
 record Dominion ℓ : Type (ℓ-suc ℓ) where
   field
