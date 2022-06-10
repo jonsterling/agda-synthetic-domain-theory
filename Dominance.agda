@@ -86,6 +86,20 @@ module 𝕃 {ℓ} (𝒮 : Dominion ℓ) where
     AlgHom.car ωAlgUnivHom = ωAlgUnivMap
     AlgHom.force ωAlgUnivHom x = refl
 
+    ωAlgUnivMapUniq : (f : AlgHom ωAlg X) → AlgHom.car f ≡ ωAlgUnivMap
+    ωAlgUnivMapUniq f = funExt λ x → sym (aux x)
+      where
+      aux : (x : ω) → ωAlgUnivMap x ≡ AlgHom.car f x
+      aux (alg x) =
+        ωAlgUnivMap (alg x) ≡⟨ cong (Alg.force X) aux' ⟩
+        Alg.force X (map (AlgHom.car f) x) ≡⟨ sym (AlgHom.force f x) ⟩
+        AlgHom.car f (alg x) ∎
+        where
+          aux' : map ωAlgUnivMap x ≡ map (AlgHom.car f) x
+          L.supp (aux' i) = L.supp x
+          L.suppIsOpen (aux' i) = L.suppIsOpen x
+          L.val (aux' i) x↓ = aux (L.val x x↓) i
+
 
   -- the final L-coalgebra
   record ω* : Type ℓ where
