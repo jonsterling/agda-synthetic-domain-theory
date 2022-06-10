@@ -3,10 +3,7 @@
 module Dominance where
 
 open import Resizing
-open import Cubical.Foundations.Prelude
-open import Cubical.Foundations.HLevels
-open import Cubical.Foundations.Equiv
-open import Cubical.Foundations.Univalence
+open import Cubical.Foundations.Everything
 open import Cubical.Reflection.RecordEquiv
 open import Cubical.Data.Sigma
 open import Cubical.HITs.PropositionalTruncation using (∥_∥)
@@ -111,6 +108,12 @@ module Dominance (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
       supp (map f u) = supp u
       val (map f u) u↓ = f (val u u↓)
 
+dropEndpoints : {A : Type} {a b : A} → Path A a b → I → A
+dropEndpoints p i = p i
+
+data S1 : Type where
+  base : S1
+  loop : base ≡ base
 
 module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 ⊥) where
   open Dominance 𝒮 h𝒮
@@ -123,18 +126,38 @@ module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 �
   data 𝕀 : Type where
     alg : L 𝕀 → 𝕀
 
-  -- the final L-coalgebra
+  invAlg : 𝕀 → L 𝕀
+  invAlg (alg x) = x
+
+  sectionAlg : section alg invAlg
+  sectionAlg (alg x) = refl
+
+  retractAlg : (x : L 𝕀) → invAlg (alg x) ≡ x
+  retractAlg _ = refl
+
+  -- Lambek's lemma
+  algIsEquiv : isEquiv alg
+  algIsEquiv = isoToIsEquiv (iso alg invAlg sectionAlg retractAlg)
+
+    -- the final L-coalgebra
   record 𝔽 : Type where
     coinductive
     field
       coalg : L 𝔽
+  open 𝔽 public
 
-  z : 𝕀
-  z = alg (partial 𝕊/⊥ ⊥-elim)
+  invCoalg : L 𝔽 → 𝔽
+  𝔽.coalg (invCoalg x) = x
 
-  -- is this the correct definition of the successor?
-  s : 𝕀 → 𝕀
-  s x = alg (𝕃.η x)
+  sectionCoalg : section coalg invCoalg
+  sectionCoalg _ = refl
+
+  retractCoalg : retract coalg invCoalg
+  coalg (retractCoalg x _) = coalg x
+
+  -- dual Lambek's lemma
+  coalgIsEquiv : isEquiv coalg
+  coalgIsEquiv = isoToIsEquiv (iso coalg invCoalg sectionCoalg retractCoalg)
 
   ε : 𝕀 → 𝔽
   supp (𝔽.coalg (ε (alg x))) = supp x
@@ -143,34 +166,3 @@ module Chains (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) (hasFalse : 𝒮 �
   ∞ : 𝔽
   supp (𝔽.coalg ∞) = 𝕊/⊤
   val (𝔽.coalg ∞) _ = ∞
-
--- Repleteness is probably not the best notion for HIGHER domain theory, since the repletion of any type is going to be an h-set.
-module Repleteness (𝒮 : Ω → Type) (h𝒮 : IsDominion 𝒮) where
-  open Dominance 𝒮 h𝒮
-
-  module _ {ℓ ℓ' : _} {A : Type ℓ} {B : Type ℓ'} where
-    IsEquable : (f : A → B) → Type _
-    IsEquable f = isEquiv {A = B → 𝕊} {B = A → 𝕊} λ ϕ x → ϕ (f x)
-
-    isPropIsEquable : (f : A → B) → isProp (IsEquable f)
-    isPropIsEquable f = isPropIsEquiv _
-
-  IsReplete : (ℓ : _) {ℓ' : _} (A : Type ℓ') → Type (ℓ-max (ℓ-suc ℓ) ℓ')
-  IsReplete ℓ A =
-    (I J : Type ℓ) (i : J → I)
-    → IsEquable i
-    → isEquiv {A = I → A} {B = J → A} (λ a j → a (i j))
-
-  isPropIsReplete : {ℓ ℓ' : _} (A : Type ℓ') → isProp (IsReplete ℓ A)
-  isPropIsReplete A = isPropΠ4 λ _ _ _ _ → isPropIsEquiv _
-
-  image : {ℓ ℓ' : _} (A : Type ℓ) (B : Type ℓ') (f : A → B) → Type (ℓ-max ℓ ℓ')
-  image A B f = Σ[ b ∈ B ] ∥ fiber f b ∥
-
-  -- This is claimed by Hyland, but not proved.
-  repletion : {ℓ : _} → Type ℓ → Type ℓ
-  repletion A = image A ((A → 𝕊) → 𝕊) λ a ϕ → ϕ a
-
-  isRepleteRepletion : {ℓ : _} (A : Type ℓ) → IsReplete ℓ (repletion A)
-  isRepleteRepletion = {!!}
-  -- TODO
